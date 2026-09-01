@@ -1,84 +1,187 @@
-// ======================================
-// Event Next Door - Shared Auth UI Script
-// (used on pages like event_list.html that show
-// a logged-in user's name + logout button in the nav)
-// ======================================
+/* ============================================
+   Form Validation & Utility Functions
+   ============================================ */
 
-// Handle Logout
-const handleLogout = () => {
-  // FIX: was calling logoutUser() — a global function that doesn't exist.
-  // api.js defines this as AuthAPI.logout().
-  AuthAPI.logout();
-  showAlert('Logged out successfully', 'success');
-  setTimeout(() => {
-    window.location.href = 'index.html';
-  }, 1000);
-};
+// Email validation regex
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// Utility Functions
-const showAlert = (message, type = 'info') => {
-  const alertDiv = document.createElement('div');
-  alertDiv.className = `alert alert-${type}`;
-  alertDiv.textContent = message;
-  alertDiv.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    padding: 15px 20px;
-    background: ${type === 'success' ? '#4CAF50' : type === 'error' ? '#f44336' : '#2196F3'};
-    color: white;
-    border-radius: 4px;
-    z-index: 9999;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    animation: slideIn 0.3s ease-in;
-  `;
-  document.body.appendChild(alertDiv);
-  setTimeout(() => alertDiv.remove(), 3000);
-};
+// Password strength checker
+function checkPasswordStrength(password) {
+    let strength = 0;
+    if (password.length >= 8) strength++;
+    if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
+    if (/[0-9]/.test(password)) strength++;
+    if (/[^a-zA-Z0-9]/.test(password)) strength++;
+    return strength;
+}
 
-const showLoading = (show) => {
-  let loader = document.getElementById('loader');
-  if (!loader && show) {
-    loader = document.createElement('div');
-    loader.id = 'loader';
-    loader.style.cssText = `
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 40px;
-      height: 40px;
-      border: 4px solid #f3f3f3;
-      border-top: 4px solid #3498db;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      z-index: 10000;
-    `;
-    document.body.appendChild(loader);
-  } else if (loader) {
-    if (show) loader.style.display = 'block';
-    else loader.style.display = 'none';
-  }
-};
+// Validate email
+function validateEmail(email) {
+    return EMAIL_REGEX.test(email);
+}
 
-// Check if user is logged in
-// FIX: previously called bare isAuthenticated()/getCurrentUser() at the top
-// level of the script, which run before AuthAPI even exists if script
-// ordering changes, and which don't exist as globals at all — they're
-// AuthAPI.isAuthenticated() / AuthAPI.getCurrentUser(). Wrapped in
-// DOMContentLoaded so it reliably runs after api.js has loaded and the
-// userNav element exists in the DOM.
-document.addEventListener('DOMContentLoaded', () => {
-  if (AuthAPI.isAuthenticated()) {
-    const user = AuthAPI.getCurrentUser();
-    if (user) {
-      const userNav = document.getElementById('userNav');
-      if (userNav) {
-        userNav.innerHTML = `
-          <span>Welcome, ${user.fullName}!</span>
-          <button onclick="handleLogout()" style="margin-left: 10px; padding: 8px 15px; background: #ff6b6b; color: white; border: none; border-radius: 4px; cursor: pointer;">Logout</button>
-        `;
-      }
+// Validate phone number
+function validatePhone(phone) {
+    const phoneRegex = /^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/;
+    return phoneRegex.test(phone.replace(/\s/g, ''));
+}
+
+// Show error message
+function showError(containerId, message) {
+    const container = document.getElementById(containerId);
+    if (container) {
+        container.textContent = message;
+        container.classList.add('show');
+        setTimeout(() => {
+            container.classList.remove('show');
+        }, 5000);
     }
-  }
-});
+}
+
+// Show success message
+function showSuccess(containerId, message) {
+    const container = document.getElementById(containerId);
+    if (container) {
+        container.textContent = message;
+        container.classList.add('show');
+        setTimeout(() => {
+            container.classList.remove('show');
+        }, 5000);
+    }
+}
+
+// Clear all errors
+function clearAllErrors(formId) {
+    const form = document.getElementById(formId);
+    if (form) {
+        form.querySelectorAll('.form-group').forEach(group => {
+            group.classList.remove('error', 'success');
+            group.querySelector('.form-error').textContent = '';
+        });
+    }
+}
+
+// Set field error
+function setFieldError(fieldId, message) {
+    const field = document.getElementById(fieldId);
+    if (field) {
+        const formGroup = field.closest('.form-group');
+        formGroup.classList.add('error');
+        formGroup.classList.remove('success');
+        formGroup.querySelector('.form-error').textContent = message;
+    }
+}
+
+// Set field success
+function setFieldSuccess(fieldId) {
+    const field = document.getElementById(fieldId);
+    if (field) {
+        const formGroup = field.closest('.form-group');
+        formGroup.classList.remove('error');
+        formGroup.classList.add('success');
+        formGroup.querySelector('.form-error').textContent = '';
+    }
+}
+
+// Toggle button loading state
+function setButtonLoading(buttonElement, isLoading) {
+    if (isLoading) {
+        buttonElement.classList.add('loading');
+        buttonElement.disabled = true;
+    } else {
+        buttonElement.classList.remove('loading');
+        buttonElement.disabled = false;
+    }
+}
+
+// Store auth token
+function storeAuthToken(token) {
+    localStorage.setItem('authToken', token);
+}
+
+// Get auth token
+function getAuthToken() {
+    return localStorage.getItem('authToken');
+}
+
+// Clear auth token
+function clearAuthToken() {
+    localStorage.removeItem('authToken');
+}
+
+// Store user data
+function storeUserData(userData) {
+    localStorage.setItem('userData', JSON.stringify(userData));
+}
+
+// Get user data
+function getUserData() {
+    const data = localStorage.getItem('userData');
+    return data ? JSON.parse(data) : null;
+}
+
+// Check if user is authenticated
+function isAuthenticated() {
+    return getAuthToken() !== null;
+}
+
+// Redirect to dashboard
+function redirectToDashboard() {
+    window.location.href = 'dashboard.html';
+}
+
+// Redirect to login
+function redirectToLogin() {
+    window.location.href = 'login.html';
+}
+
+// API call helper
+async function apiCall(endpoint, method = 'GET', data = null) {
+    const options = {
+        method,
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${getAuthToken()}`
+        }
+    };
+
+    if (data) {
+        options.body = JSON.stringify(data);
+    }
+
+    try {
+        const response = await fetch(`/api${endpoint}`, options);
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'An error occurred');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('API Error:', error);
+        throw error;
+    }
+}
+
+// Export functions for use in other files
+window.authUtils = {
+    validateEmail,
+    validatePhone,
+    checkPasswordStrength,
+    showError,
+    showSuccess,
+    clearAllErrors,
+    setFieldError,
+    setFieldSuccess,
+    setButtonLoading,
+    storeAuthToken,
+    getAuthToken,
+    clearAuthToken,
+    storeUserData,
+    getUserData,
+    isAuthenticated,
+    redirectToDashboard,
+    redirectToLogin,
+    apiCall
+};
